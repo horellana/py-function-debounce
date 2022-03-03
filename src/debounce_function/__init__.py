@@ -8,7 +8,7 @@ def now():
 def debounce(ms_delay):
     def wrap(f):
         callback = f
-        t = None
+        t = now()
         d = ms_delay
 
         @functools.wraps(callback)
@@ -17,15 +17,11 @@ def debounce(ms_delay):
             nonlocal d
             nonlocal callback
 
-            if t is None:
-                callback(*args, **kwargs)
-                t = now()
-            else:
-                dt = now() - t
+            dt = now() - t
 
-                if dt >= d:
-                    t = now()
-                    callback(*args, **kwargs)
+            if dt >= d:
+                t = now()
+                callback(*args, **kwargs)
 
         return wrapper
 
@@ -43,16 +39,12 @@ def async_debounce(ms_delay):
             nonlocal t
             nonlocal d
             nonlocal callback
+            
+            dt = now() - t
 
-            if t is None:
-                await callback(*args, **kwargs)
+            if dt >= d:
                 t = now()
-            else:
-                dt = now() - t
-
-                if dt >= d:
-                    t = now()
-                    await callback(*args, **kwargs)
+                await callback(*args, **kwargs)
 
         return wrapper
 
