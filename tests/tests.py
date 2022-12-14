@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from debounce_function import debounce
+from debounce_function import debounce, async_debounce
 
 
 class TestDebounceMethod(unittest.TestCase):
@@ -27,6 +27,22 @@ class TestAsyncDebounceMethod(unittest.IsolatedAsyncioTestCase):
         count = 0
 
         @debounce(1000)
+        async def f():
+            nonlocal count
+            count = count + 1
+            print("calling async function")
+
+        start = int(time.time())
+
+        while (int(time.time()) - start) < 5:
+            await f()
+
+        self.assertEqual(count, 4)
+
+    async def test_old_async(self):
+        count = 0
+
+        @async_debounce(1000)
         async def f():
             nonlocal count
             count = count + 1

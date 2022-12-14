@@ -47,3 +47,6 @@ def debounce(ms_delay):
 
         return wrapped
     return wrap
+
+
+async_debounce = debounce
