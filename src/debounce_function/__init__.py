@@ -1,51 +1,49 @@
 import time
+import asyncio
 import functools
-
-def now():
-    return int(time.time()) * 1000
 
 
 def debounce(ms_delay):
+    def get_ts():
+        return time.monotonic_ns() / 1_000_000
+
+    def should_callback(last_called, delay, now):
+        dt = now - last_called
+
+        if dt >= delay:
+            return True
+        else:
+            return False
+
     def wrap(f):
         callback = f
-        t = now()
-        d = ms_delay
+        last_called = get_ts()
+        delay = ms_delay
 
-        @functools.wraps(callback)
-        def wrapper(*args, **kwargs):
-            nonlocal t
-            nonlocal d
-            nonlocal callback
+        if asyncio.iscoroutinefunction(f):
+            @functools.wraps(callback)
+            async def wrapped(*args, **kwargs):
+                nonlocal last_called
+                nonlocal delay
+                nonlocal callback
 
-            dt = now() - t
+                now = get_ts()
 
-            if dt >= d:
-                t = now()
-                callback(*args, **kwargs)
+                if should_callback(last_called, delay, now):
+                    last_called = now
+                    return await callback(*args, *kwargs)
+        else:
+            @functools.wraps(callback)
+            def wrapped(*args, **kwargs):
+                nonlocal last_called
+                nonlocal delay
+                nonlocal callback
 
-        return wrapper
+                now = get_ts()
 
-    return wrap 
+                if should_callback(last_called, delay, now):
+                    last_called = now
+                    return callback(*args, *kwargs)
 
-
-def async_debounce(ms_delay):
-    def wrap(f):
-        callback = f
-        t = None
-        d = ms_delay
-
-        @functools.wraps(callback)
-        async def wrapper(*args, **kwargs):
-            nonlocal t
-            nonlocal d
-            nonlocal callback
-            
-            dt = now() - t
-
-            if dt >= d:
-                t = now()
-                await callback(*args, **kwargs)
-
-        return wrapper
-
-    return wrap 
+        return wrapped
+    return wrap
